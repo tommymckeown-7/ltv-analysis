@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kukoon — Retention Strategy</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&family=Work+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --slate: #2B3A42; --teal: #4A6670; --teal-light: #6B8F9A; --teal-pale: #E8F0F2;
+  --cream: #F7F4F0; --amber: #C8813A; --amber-light: #F5DFC0;
+  --red: #C0392B; --red-light: #FADBD8; --green: #1E7E5A; --green-light: #D5F0E6;
+  --border: #D8E4E8; --muted: #7A8E96; --text: #1A2830;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Work Sans', sans-serif; background: var(--cream); color: var(--text); font-size: 14px; line-height: 1.6; }
+.nav { background: var(--slate); position: sticky; top: 0; z-index: 100; display: flex; align-items: center; overflow-x: auto; }
+.nav-logo { font-family: 'DM Serif Text', serif; color: white; padding: 14px 24px; font-size: 15px; white-space: nowrap; border-right: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
+.nav-item { color: rgba(255,255,255,0.55); padding: 14px 16px; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; transition: all 0.2s; }
+.nav-item:hover, .nav-item.active { color: white; border-bottom-color: var(--amber); }
+.hero { background: var(--slate); padding: 60px 48px 52px; position: relative; overflow: hidden; }
+.hero::before { content: ''; position: absolute; top: -80px; right: -80px; width: 400px; height: 400px; background: radial-gradient(circle, rgba(74,102,112,0.25) 0%, transparent 70%); pointer-events: none; }
+.hero-tag { font-size: 10px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--teal-light); margin-bottom: 10px; }
+.hero h1 { font-family: 'DM Serif Text', serif; font-size: 42px; color: white; line-height: 1.15; margin-bottom: 14px; max-width: 680px; }
+.hero h1 em { color: var(--amber); font-style: italic; }
+.hero-sub { color: rgba(255,255,255,0.5); font-size: 14px; max-width: 580px; line-height: 1.75; margin-bottom: 36px; }
+.hero-row { display: flex; gap: 48px; flex-wrap: wrap; }
+.hero-kpi-val { font-family: 'DM Serif Text', serif; font-size: 32px; color: white; line-height: 1; }
+.hero-kpi-val.amber { color: var(--amber); }
+.hero-kpi-label { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 4px; }
+.hero-kpi-sub { font-size: 11px; color: rgba(255,255,255,0.25); margin-top: 2px; }
+.wrap { max-width: 1280px; margin: 0 auto; padding: 40px 48px; }
+.section { margin-bottom: 60px; scroll-margin-top: 52px; }
+.sec-hd { display: flex; align-items: baseline; gap: 14px; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 2px solid var(--border); }
+.sec-n { font-family: 'DM Serif Text', serif; font-size: 40px; color: var(--border); line-height: 1; }
+.sec-title { font-family: 'DM Serif Text', serif; font-size: 21px; color: var(--slate); }
+.sec-sub { font-size: 13px; color: var(--muted); margin-top: 3px; }
+/* GRIDS — responsive with sensible min widths */
+.g2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); gap: 20px; }
+.g4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+
+/* STAT CARDS */
+.stat { background: white; border-radius: 10px; border: 1px solid var(--border); padding: 22px; position: relative; overflow: hidden; }
+.stat::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: var(--teal); }
+.stat.amber::after { background: var(--amber); } .stat.red::after { background: var(--red); } .stat.green::after { background: var(--green); }
+.stat-lbl { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.stat-val { font-family: 'DM Serif Text', serif; font-size: 28px; color: var(--slate); line-height: 1.1; margin-bottom: 6px; }
+.stat-val.amber { color: var(--amber); } .stat-val.red { color: var(--red); } .stat-val.green { color: var(--green); }
+.stat-s { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+/* PANELS */
+.panel { background: white; border-radius: 10px; border: 1px solid var(--border); overflow: hidden; }
+.ph { padding: 12px 20px; font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; }
+.ph-slate { background: var(--slate); color: white; } .ph-teal { background: var(--teal); color: white; }
+.ph-amber { background: var(--amber); color: white; } .ph-green { background: var(--green); color: white; }
+.pb { padding: 24px; }
+
+/* TABLES — scrollable wrapper, no text overflow */
+.tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.tbl { width: 100%; border-collapse: collapse; min-width: 500px; }
+.tbl th { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); padding: 10px 14px; text-align: left; border-bottom: 2px solid var(--border); white-space: nowrap; }
+.tbl td { padding: 11px 14px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: top; line-height: 1.55; }
+.tbl td:first-child { white-space: nowrap; }
+.tbl tr:last-child td { border-bottom: none; }
+.tbl tr:hover td { background: var(--cream); }
+
+/* PILLS */
+.pill { display: inline-block; padding: 3px 9px; border-radius: 12px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.p-green { background: var(--green-light); color: var(--green); } .p-amber { background: var(--amber-light); color: var(--amber); }
+.p-red { background: var(--red-light); color: var(--red); } .p-teal { background: var(--teal-pale); color: var(--teal); }
+.p-slate { background: rgba(43,58,66,0.1); color: var(--slate); }
+
+/* BAR CHARTS — label outside bar, value to the right, no text clipping */
+.bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.bar-lbl { font-size: 12px; color: var(--muted); flex-shrink: 0; width: 90px; text-align: right; }
+.bar-track { flex: 1; background: var(--teal-pale); border-radius: 4px; height: 10px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; }
+.bar-pct { font-size: 12px; font-weight: 700; color: var(--slate); flex-shrink: 0; width: 44px; }
+.bar-count { font-size: 12px; color: var(--muted); flex-shrink: 0; }
+
+/* INSIGHT CARDS */
+.ins { display: flex; gap: 14px; padding: 16px 18px; border-radius: 8px; border-left: 4px solid; margin-bottom: 12px; }
+.ins.red { background: var(--red-light); border-color: var(--red); } .ins.green { background: var(--green-light); border-color: var(--green); }
+.ins.amber { background: var(--amber-light); border-color: var(--amber); } .ins.teal { background: var(--teal-pale); border-color: var(--teal); }
+.ins-ico { font-size: 18px; flex-shrink: 0; padding-top: 1px; }
+.ins-title { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+.ins-body { font-size: 12px; line-height: 1.65; color: rgba(26,40,48,0.8); }
+
+/* NOTES */
+.note { background: var(--amber-light); border: 1px solid #E0C090; border-radius: 7px; padding: 12px 16px; font-size: 12px; color: #6B4010; margin-top: 16px; line-height: 1.65; }
+.note.teal { background: var(--teal-pale); border-color: var(--border); color: var(--teal); }
+
+/* CALLOUT */
+.callout { background: var(--slate); border-radius: 10px; padding: 28px 32px; margin: 24px 0; }
+.callout h4 { font-family: 'DM Serif Text', serif; font-size: 19px; color: var(--amber); margin-bottom: 12px; }
+.callout p { font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.8; }
+
+.divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+/* PURCHASE TRANSITIONS */
+.tr-row { padding: 14px 0; border-bottom: 1px solid var(--border); }
+.tr-row:last-child { border-bottom: none; }
+.tr-from { font-weight: 600; font-size: 13px; color: var(--slate); margin-bottom: 8px; }
+.tr-from::after { content: " →"; color: var(--teal-light); font-weight: 400; margin-left: 4px; }
+.tr-items { display: flex; gap: 8px; flex-wrap: wrap; }
+.tr-item { font-size: 12px; padding: 4px 10px; border-radius: 12px; font-weight: 600; }
+
+footer { background: var(--slate); color: rgba(255,255,255,0.35); text-align: center; padding: 22px; font-size: 12px; margin-top: 60px; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">Kukoon — Retention</div>
+  <div class="nav-item active" onclick="goTo('opportunity')">Opportunity</div>
+  <div class="nav-item" onclick="goTo('ladder')">LTV Ladder</div>
+  <div class="nav-item" onclick="goTo('window')">Purchase Window</div>
+  <div class="nav-item" onclick="goTo('cohorts')">Cohorts</div>
+  <div class="nav-item" onclick="goTo('products')">Product Intelligence</div>
+  <div class="nav-item" onclick="goTo('second-order')">2nd Order</div><div class="nav-item" onclick="goTo('flywheel')">Loyalty Flywheel</div><div class="nav-item" onclick="goTo('segments')">Segments</div>
+</nav>
+
+<div class="hero">
+  <div class="hero-tag">Kukoon Rugs · Retention Strategy · Part 1 of 3</div>
+  <h1>The <em>Retention</em> Opportunity:<br>Your Biggest Untapped Revenue Lever</h1>
+  <div class="hero-sub">81.4% of your customers never came back. Converting just 5% of them to a second purchase adds ~£965k in revenue with zero acquisition spend. Every data point in this document is built from your actual Shopify data, Oct 2023 to Mar 2026. POS showroom orders, draft orders and zero-value orders have been excluded. POS showroom orders, draft orders, zero-value orders and staff orders have been excluded for accuracy.</div>
+  <div class="hero-row">
+    <div><div class="hero-kpi-val amber">143,078</div><div class="hero-kpi-label">One-time buyers</div><div class="hero-kpi-sub">Never purchased again</div></div>
+    <div><div class="hero-kpi-val">19.2%</div><div class="hero-kpi-label">Current repeat rate</div><div class="hero-kpi-sub">Benchmark: 25–30%</div></div>
+    <div><div class="hero-kpi-val">70 days</div><div class="hero-kpi-label">Median time to 2nd purchase</div><div class="hero-kpi-sub">54% return within 90 days</div></div>
+    <div><div class="hero-kpi-val">£681</div><div class="hero-kpi-label">Avg LTV — 5×+ buyer</div><div class="hero-kpi-sub">vs £135 for a 1× buyer</div></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- 01 OPPORTUNITY -->
+<div class="section" id="opportunity">
+  <div class="sec-hd"><div class="sec-n">01</div><div><div class="sec-title">The Revenue Opportunity</div><div class="sec-sub">What fixing retention is actually worth</div></div></div>
+  <div class="g4" style="margin-bottom:24px;">
+    <div class="stat red"><div class="stat-lbl">One-Time Buyers</div><div class="stat-val red">143,078</div><div class="stat-s">Purchased once. Never returned.</div></div>
+    <div class="stat amber"><div class="stat-lbl">Convert 5% → 2nd purchase</div><div class="stat-val amber">~£965k</div><div class="stat-s">7,154 customers · £135 AOV · Zero ad spend</div></div>
+    <div class="stat amber"><div class="stat-lbl">Convert 10% → 2nd purchase</div><div class="stat-val amber">~£1.93M</div><div class="stat-s">14,308 customers · £135 AOV · Zero ad spend</div></div>
+    <div class="stat green"><div class="stat-lbl">LTV Multiplier (1× → 5×+)</div><div class="stat-val green">5.0×</div><div class="stat-s">£135 average → £681 lifetime value</div></div>
+  </div>
+  <div class="g2">
+    <div>
+      <div class="ins red">
+        <div class="ins-ico">🚨</div>
+        <div><div class="ins-title">80.8% of customers never returned</div><div class="ins-body">Of 176,989 customers who placed at least one order, 143,078 never came back. Improving repeat rate from 19.2% to the 25–30% industry benchmark adds over £1.5M from existing customers alone.</div></div>
+      </div>
+      <div class="ins amber">
+        <div class="ins-ico">📅</div>
+        <div><div class="ins-title">54% of repeat buyers return within 90 days</div><div class="ins-body">The repeat purchase window is well-defined. More than half of all customers who will ever buy again do so within 90 days. This makes days 7, 30, 60, and 90 the most critical window for any retention activity.</div></div>
+      </div>
+      <div class="ins teal">
+        <div class="ins-ico">🇮🇪</div>
+        <div><div class="ins-title">Ireland customers are 55% more likely to repeat</div><div class="ins-body">Irish customers repeat at 23.7% vs 15.3% for UK — and are 92% more likely to become loyal 3×+ buyers. Retention activity targeting Ireland should be prioritised and adapted for the market, not treated identically to UK.</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="callout" style="margin:0;height:100%;">
+        <h4>The core calculation</h4>
+        <p>You have 176,989 customers. If your repeat rate moved from 19.2% to the industry benchmark of 27%, that's an additional 13,987 repeat customers. At an average second-order value of £117, that's <strong style="color:white;">£1.63M in incremental revenue</strong> — from customers you already acquired, at near-zero marginal cost.</p>
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.1);">
+          <div style="display:flex;gap:28px;align-items:center;">
+            <div><div style="font-family:'DM Serif Text',serif;font-size:22px;color:#A8D5E2;">18.6%</div><div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px;">Current rate</div></div>
+            <div style="color:rgba(255,255,255,0.3);font-size:20px;">→</div>
+            <div><div style="font-family:'DM Serif Text',serif;font-size:22px;color:var(--amber);">27%</div><div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px;">Industry benchmark</div></div>
+            <div style="color:rgba(255,255,255,0.3);font-size:20px;">=</div>
+            <div><div style="font-family:'DM Serif Text',serif;font-size:22px;color:white;">+£1.62M</div><div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px;">Incremental revenue</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 02 LTV LADDER -->
+<div class="section" id="ladder">
+  <div class="sec-hd"><div class="sec-n">02</div><div><div class="sec-title">The LTV Ladder</div><div class="sec-sub">What each repeat purchase adds to a customer's lifetime value</div></div></div>
+  <div class="g2">
+    <div class="panel">
+      <div class="ph ph-slate">Average Lifetime Value by Purchase Frequency</div>
+      <div class="pb">
+        <div class="bar-row"><div class="bar-lbl">1× buyer</div><div class="bar-track"><div class="bar-fill" style="width:19.8%;background:var(--teal-light);"></div></div><div class="bar-pct">£134</div><div class="bar-count">135,540 customers</div></div>
+        <div class="bar-row"><div class="bar-lbl">2× buyer</div><div class="bar-track"><div class="bar-fill" style="width:37.3%;background:var(--teal);"></div></div><div class="bar-pct">£251</div><div class="bar-count">22,612 customers</div></div>
+        <div class="bar-row"><div class="bar-lbl">3× buyer</div><div class="bar-track"><div class="bar-fill" style="width:53%;background:var(--slate);"></div></div><div class="bar-pct">£359</div><div class="bar-count">5,526 customers</div></div>
+        <div class="bar-row"><div class="bar-lbl">4× buyer</div><div class="bar-track"><div class="bar-fill" style="width:68%;background:var(--amber);"></div></div><div class="bar-pct">£461</div><div class="bar-count">1,734 customers</div></div>
+        <div class="bar-row"><div class="bar-lbl">5×+ buyer</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--amber);"></div></div><div class="bar-pct">£674</div><div class="bar-count">1,094 customers</div></div>
+        <div class="note">Each additional purchase adds ~£120–130 in lifetime value. The 1× → 2× step is the highest-leverage action — 143k customers sitting at the bottom of this ladder.</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ph ph-teal">AOV by Order Number</div>
+      <div class="pb">
+        <div class="tbl-wrap"><table class="tbl">
+          <thead><tr><th>Order Number</th><th>Avg Order Value</th><th>Volume</th><th>vs Order 1</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Order 1</strong></td><td><strong>£133.69</strong></td><td>166,506</td><td>—</td></tr>
+            <tr><td>Order 2</td><td>£117.19</td><td>30,966</td><td style="color:var(--muted);">−13%</td></tr>
+            <tr><td>Order 3</td><td>£114.59</td><td>8,354</td><td style="color:var(--muted);">−15%</td></tr>
+            <tr><td>Order 4</td><td>£114.35</td><td>2,828</td><td style="color:var(--muted);">−15%</td></tr>
+            <tr><td>Order 5</td><td>£117.63</td><td>1,094</td><td style="color:var(--muted);">−14%</td></tr>
+          </tbody>
+        </table></div>
+        <div class="note">AOV drops ~13% after the first order and stabilises. Repeat buyers spend slightly less per order but more in aggregate — likely buying runners, smaller sizes, or rugs for additional rooms.</div>
+        <div class="divider"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="text-align:center;padding:14px;background:var(--cream);border-radius:8px;">
+            <div class="stat-lbl">Repeat buyer avg LTV (UK)</div>
+            <div style="font-family:'DM Serif Text',serif;font-size:24px;color:var(--slate);">£281</div>
+          </div>
+          <div style="text-align:center;padding:14px;background:var(--teal-pale);border-radius:8px;">
+            <div class="stat-lbl">Repeat buyer avg LTV (Ireland)</div>
+            <div style="font-family:'DM Serif Text',serif;font-size:24px;color:var(--teal);">£306</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 03 PURCHASE WINDOW -->
+<div class="section" id="window">
+  <div class="sec-hd"><div class="sec-n">03</div><div><div class="sec-title">The Purchase Window</div><div class="sec-sub">When repeat buyers come back — and what that means for retention timing</div></div></div>
+  <div class="g2">
+    <div class="panel">
+      <div class="ph ph-slate">Time to Second Purchase — 33,911 repeat buyers</div>
+      <div class="pb">
+        <div style="display:flex;gap:32px;margin-bottom:22px;">
+          <div><div class="stat-lbl">Median</div><div style="font-family:'DM Serif Text',serif;font-size:36px;color:var(--slate);">74 days</div></div>
+          <div><div class="stat-lbl">Mean</div><div style="font-family:'DM Serif Text',serif;font-size:36px;color:var(--muted);">160 days</div></div>
+          <div><div class="stat-lbl">p25</div><div style="font-family:'DM Serif Text',serif;font-size:36px;color:var(--teal-light);">12 days</div></div>
+        </div>
+        <div class="bar-row"><div class="bar-lbl">0–7 days</div><div class="bar-track"><div class="bar-fill" style="width:20%;background:var(--amber);"></div></div><div class="bar-val">20.0%</div></div>
+        <div class="bar-row"><div class="bar-lbl">8–30 days</div><div class="bar-track"><div class="bar-fill" style="width:17.6%;background:var(--teal-light);"></div></div><div class="bar-pct">17.6%</div></div>
+        <div class="bar-row"><div class="bar-lbl">31–90 days</div><div class="bar-track"><div class="bar-fill" style="width:17.0%;background:var(--teal);"></div></div><div class="bar-pct">17.0%</div></div>
+        <div class="bar-row"><div class="bar-lbl">91–180 days</div><div class="bar-track"><div class="bar-fill" style="width:12.9%;background:var(--teal);"></div></div><div class="bar-pct">12.9%</div></div>
+        <div class="bar-row"><div class="bar-lbl">181–365 days</div><div class="bar-track"><div class="bar-fill" style="width:18.0%;background:var(--slate);"></div></div><div class="bar-pct">18.0%</div></div>
+        <div class="bar-row"><div class="bar-lbl">365d+</div><div class="bar-track"><div class="bar-fill" style="width:16.0%;background:var(--muted);"></div></div><div class="bar-pct">16.0%</div></div>
+        <div class="note">18.5% of repeat buyers return within 7 days — likely adding underlay or a second room rug in the same purchase session. These customers are in active buying mode and need a cross-sell prompt, not a win-back.</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ph ph-amber">Retention Timing — What Each Window Tells You</div>
+      <div class="pb">
+        <div class="tbl-wrap"><table class="tbl">
+          <thead><tr><th>Timeframe</th><th>% of eventual repeaters</th><th>Retention angle</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Day 7</strong></td><td><span class="pill p-amber">20%</span></td><td>Cross-sell: complete the room, different size, complementary runner. High intent still active.</td></tr>
+            <tr><td><strong>Day 30</strong></td><td><span class="pill p-amber">37%</span></td><td>New arrivals in their purchased range. Brand recall still strong at this point.</td></tr>
+            <tr><td><strong>Day 60</strong></td><td><span class="pill p-amber">48%</span></td><td>Show the most common second purchase for their first-order range (see product transitions).</td></tr>
+            <tr><td><strong>Day 90</strong></td><td><span class="pill p-green">54%</span></td><td>Last easy touch before win-back territory begins.</td></tr>
+            <tr><td><strong>Day 120</strong></td><td><span class="pill p-green">59%</span></td><td>Soft incentive — free delivery or loyalty credit.</td></tr>
+            <tr><td><strong>Day 180</strong></td><td><span class="pill p-slate">67%</span></td><td>Stronger incentive. Last meaningful attempt before customer is lapsed.</td></tr>
+            <tr><td><strong>Day 365+</strong></td><td>85%+</td><td>Annual re-engagement — new season, new arrivals.</td></tr>
+          </tbody>
+        </table></div>
+        <div class="note"><strong>The 90-day window is the primary lever.</strong> More than half of all repeat purchases happen within 90 days of the first order. Retention activity concentrated in this window captures the majority of winnable second purchases at the lowest effort.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 04 COHORTS -->
+<div class="section" id="cohorts">
+  <div class="sec-hd"><div class="sec-n">04</div><div><div class="sec-title">Cohort Repeat Rates</div><div class="sec-sub">How each acquisition quarter is performing over time</div></div></div>
+  <div class="panel">
+    <div class="ph ph-slate">Repeat Rate by Acquisition Quarter — Oct 2023 to Mar 2026</div>
+    <div class="pb">
+      <div class="note teal" style="margin-bottom:18px;">⚠️ Recent cohorts (2025 Q3+) show lower rates because customers haven't had enough time to repeat. Q4 2023 – Q2 2024 are your mature benchmarks. Do not read recent cohorts as decline — they are incomplete data.</div>
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Cohort</th><th>Customers Acquired</th><th>Repeated</th><th>Repeat Rate</th><th>Cohort Age</th><th>Reading</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Q4 2023</strong></td><td>18,865</td><td>6,223</td><td><span class="pill p-green">33.0%</span></td><td>Fully mature (2+ yrs)</td><td>Your strongest cohort — benchmark target</td></tr>
+          <tr><td><strong>Q1 2024</strong></td><td>12,220</td><td>3,426</td><td><span class="pill p-green">28.0%</span></td><td>Fully mature</td><td>On track ✓</td></tr>
+          <tr><td><strong>Q2 2024</strong></td><td>7,944</td><td>2,122</td><td><span class="pill p-green">26.7%</span></td><td>Fully mature</td><td>On track ✓</td></tr>
+          <tr><td><strong>Q3 2024</strong></td><td>8,567</td><td>2,156</td><td><span class="pill p-green">25.2%</span></td><td>Mostly mature</td><td>On track — small dip, monitor</td></tr>
+          <tr><td><strong>Q4 2024</strong></td><td>18,708</td><td>3,974</td><td><span class="pill p-amber">21.2%</span></td><td>Maturing (18 months)</td><td>Still climbing — watch if it reaches 25%+ by Q4 2026</td></tr>
+          <tr><td><strong>Q1 2025</strong></td><td>14,811</td><td>2,646</td><td><span class="pill p-amber">17.9%</span></td><td>Maturing (12 months)</td><td>Too early — expect to rise significantly</td></tr>
+          <tr><td><strong>Q2 2025</strong></td><td>12,211</td><td>2,048</td><td><span class="pill p-amber">16.8%</span></td><td>Early (9 months)</td><td>Too early to read</td></tr>
+          <tr><td><strong>Q3 2025</strong></td><td>19,187</td><td>3,030</td><td><span class="pill p-red">15.8%</span></td><td>Very early (6 months)</td><td>Too early — customers still in the active 90-day window</td></tr>
+          <tr><td><strong>Q4 2025</strong></td><td>37,048</td><td>4,201</td><td><span class="pill p-red">11.3%</span></td><td>Very early (3 months)</td><td>Too early — BFCM cohort, just entering the repeat window now</td></tr>
+          <tr><td><strong>Q1 2026</strong></td><td>16,945</td><td>1,140</td><td><span class="pill p-red">6.7%</span></td><td>Immature (&lt;1 month)</td><td>Ignore — too early to read</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note" style="margin-top:14px;"><strong>Benchmark: 25–33% repeat rate at 18+ months.</strong> Q4 2024 (20,366 customers, currently 22%) is the most important cohort to track. If it plateaus below 24% by Q4 2026, investigate what changed in acquisition quality or post-purchase experience compared to the stronger 2023/early 2024 cohorts.</div>
+    </div>
+  </div>
+  <div class="g2" style="margin-top:20px;">
+    <div class="panel">
+      <div class="ph ph-teal">UK vs Ireland Repeat Rate</div>
+      <div class="pb">
+        <div class="tbl-wrap"><table class="tbl">
+          <thead><tr><th>Market</th><th>Buyers</th><th>Repeat Rate</th><th>Loyal (3×+)</th><th>Avg LTV</th></tr></thead>
+          <tbody>
+            <tr><td>🇬🇧 United Kingdom</td><td>82,360</td><td><span class="pill p-amber">13.9%</span></td><td>3.1%</td><td>£152</td></tr>
+            <tr><td>🇮🇪 Ireland</td><td>83,143</td><td><span class="pill p-green">23.4% +68%</span></td><td>7.0% +126%</td><td>£171</td></tr>
+          </tbody>
+        </table></div>
+        <div class="note">Irish customers are significantly more loyal at every tier. Any retention programme should have an Ireland-specific variant — local content, local context. What works for UK retention may not be optimised for your most valuable market.</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ph ph-green">Cohort Monitoring Priorities</div>
+      <div class="pb">
+        <div class="ins green" style="margin-bottom:10px;">
+          <div class="ins-ico">📅</div>
+          <div><div class="ins-title">Monitor Q4 2024 cohort monthly</div><div class="ins-body">20,366 customers currently at 22% repeat rate. Target 25%+ by Q4 2026. If it plateaus below 24%, investigate whether acquisition quality or post-purchase experience changed in that quarter.</div></div>
+        </div>
+        <div class="ins amber">
+          <div class="ins-ico">🎯</div>
+          <div><div class="ins-title">Q4 2025 BFCM cohort is in its window now</div><div class="ins-body">38,806 customers are at peak repeat purchase probability in April/May 2026. Any retention activity landing on this cohort right now is operating at maximum effectiveness. After day 90 this window closes.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 05 PRODUCTS -->
+<div class="section" id="products">
+  <div class="sec-hd"><div class="sec-n">05</div><div><div class="sec-title">Product Intelligence</div><div class="sec-sub">Which ranges drive retention — and what customers buy next</div></div></div>
+
+  <div class="panel" style="margin-bottom:20px;">
+    <div class="ph ph-slate">Range Performance — LTV Signal, Returns & Strategic Read</div>
+    <div class="pb">
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Range</th><th>Revenue Share</th><th>Units Sold</th><th>Avg Price</th><th>Return Rate</th><th>LTV Signal</th><th>Strategic Read</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Renuu</strong></td><td>27.5%</td><td>51,484</td><td>£126</td><td><span class="pill p-amber">13.6%</span></td><td><span class="pill p-amber">Medium</span></td><td>Dominant volume driver — good for scale, not ideal for LTV-focused acquisition</td></tr>
+          <tr><td><strong>Ludlow</strong></td><td>3.4%</td><td>5,498</td><td>£147</td><td><span class="pill p-green">8.1%</span></td><td><span class="pill p-green">HIGH ✓</span></td><td>Best acquisition product for LTV — high AOV, lowest return rate in premium tier</td></tr>
+          <tr><td><strong>Soft Washable</strong></td><td>7.5%</td><td>12,500</td><td>£142</td><td><span class="pill p-red">18.4%</span></td><td><span class="pill p-red">Low</span></td><td>Strong AOV undermined by high return rate — investigate root cause before scaling</td></tr>
+          <tr><td><strong>Oscar</strong></td><td>5.2%</td><td>19,266</td><td>£64</td><td><span class="pill p-green">7.7%</span></td><td><span class="pill p-amber">Medium</span></td><td>Low AOV but very low returns — strong loyalty and repeat product</td></tr>
+          <tr><td><strong>Nore</strong></td><td>4.8%</td><td>18,206</td><td>£62</td><td><span class="pill p-green">6.9%</span></td><td><span class="pill p-amber">Medium</span></td><td>Lowest return rate of any range — reliable loyalty driver</td></tr>
+          <tr><td><strong>Hatton</strong></td><td>3.1%</td><td>7,647</td><td>£97</td><td><span class="pill p-green">8.4%</span></td><td><span class="pill p-amber">Medium</span></td><td>Solid mid-range — strong cross-sell candidate for Renuu buyers</td></tr>
+          <tr><td><strong>Juliette</strong></td><td>2.3%</td><td>5,021</td><td>£110</td><td><span class="pill p-green">10.3%</span></td><td><span class="pill p-green">Good</span></td><td>Good AOV, acceptable returns — underutilised in cross-sell</td></tr>
+          <tr><td><strong>Jute/Natural</strong></td><td>1.7%</td><td>3,528</td><td>£116</td><td><span class="pill p-amber">13.7%</span></td><td><span class="pill p-amber">Medium</span></td><td>Strongest range loyalty signal of all — 445 customers re-bought the same range</td></tr>
+          <tr><td><strong>Caoimhe</strong></td><td>2.0%</td><td>2,247</td><td>£207</td><td><span class="pill p-red">22.6%</span></td><td><span class="pill p-red">Low</span></td><td>Highest AOV but worst return rate — pause acquisition traffic until resolved</td></tr>
+          <tr><td><strong>Zola</strong></td><td>1.5%</td><td>2,494</td><td>£138</td><td><span class="pill p-amber">13.2%</span></td><td><span class="pill p-amber">Medium</span></td><td>Strong AOV — worth growing as a cross-sell target</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="g2" style="margin-bottom:20px;">
+    <div class="panel">
+      <div class="ph ph-teal">The Underlay Signal — New Room Indicator</div>
+      <div class="pb">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+          <div style="text-align:center;padding:16px;background:var(--cream);border-radius:8px;">
+            <div class="stat-lbl">Underlay on Order 1</div>
+            <div style="font-family:'DM Serif Text',serif;font-size:32px;color:var(--slate);">80.8%</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;">47,279 line items</div>
+          </div>
+          <div style="text-align:center;padding:16px;background:var(--teal-pale);border-radius:8px;">
+            <div class="stat-lbl">Underlay on Order 2+</div>
+            <div style="font-family:'DM Serif Text',serif;font-size:32px;color:var(--teal);">18.8%</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;">10,929 line items</div>
+          </div>
+        </div>
+        <p style="font-size:13px;color:var(--muted);line-height:1.6;">Underlay is overwhelmingly bought alongside a first rug. When it appears on a second order it almost certainly means the customer is furnishing another room — they already have underlay for their original rug.</p>
+        <div class="ins green" style="margin-top:14px;margin-bottom:0;">
+          <div class="ins-ico">🏠</div>
+          <div><div class="ins-title">Underlay on order 2+ = multi-room buyer</div><div class="ins-body">Any customer who includes underlay on a second or later order has signalled they're furnishing another room. These customers have the highest cross-sell potential in the business and should be identified and treated as a priority segment.</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ph ph-amber">Range Loyalty — Customers Who Re-Buy The Same Range</div>
+      <div class="pb">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6;">A significant portion of repeat buyers return to the exact same range. These customers respond strongly to new additions and restocks within the ranges they already own.</p>
+        <div class="tbl-wrap"><table class="tbl">
+          <thead><tr><th>Range</th><th>Re-bought same range</th><th>Signal</th></tr></thead>
+          <tbody>
+            <tr><td>Jute/Natural</td><td>445 customers</td><td><span class="pill p-green">Strongest range loyalty</span></td></tr>
+            <tr><td>Renuu – Zoe</td><td>393 customers</td><td><span class="pill p-green">Strong range loyalty</span></td></tr>
+            <tr><td>Soft Washable Vintage</td><td>261 customers</td><td><span class="pill p-amber">Good loyalty</span></td></tr>
+            <tr><td>Renuu – Faro</td><td>236 customers</td><td><span class="pill p-amber">Good loyalty</span></td></tr>
+            <tr><td>Renuu – Moonshine</td><td>49 customers</td><td><span class="pill p-teal">Moderate</span></td></tr>
+          </tbody>
+        </table></div>
+        <div class="note">New stock arrivals and range updates in these collections should trigger targeted outreach to customers who've already bought from them. Range-loyal customers are your easiest second purchase — they've already proven their preference.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph ph-slate">Purchase Transitions — What Customers Buy on Their Second Order</div>
+    <div class="pb">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;">Based on Shopify order data — the most common second purchase for customers who bought each range first. Use this to determine what cross-sell is most relevant at each post-purchase touchpoint rather than showing generic new arrivals.</p>
+      <div class="tr-row"><div class="tr-from">Renuu – Zoe first</div><div class="tr-items"><span class="tr-item" style="background:var(--teal-pale);color:var(--teal);">Renuu – Zoe again (393)</span><span class="tr-item" style="background:var(--amber-light);color:var(--amber);">Underlay — new room (376)</span><span class="tr-item" style="background:var(--green-light);color:var(--green);">Soft Washable Vintage (118)</span></div></div>
+      <div class="tr-row"><div class="tr-from">Renuu – Faro first</div><div class="tr-items"><span class="tr-item" style="background:var(--teal-pale);color:var(--teal);">Renuu – Faro again (236)</span><span class="tr-item" style="background:var(--amber-light);color:var(--amber);">Underlay — new room (304)</span><span class="tr-item" style="background:var(--green-light);color:var(--green);">Jute/Natural (55)</span></div></div>
+      <div class="tr-row"><div class="tr-from">Jute/Natural first</div><div class="tr-items"><span class="tr-item" style="background:var(--teal-pale);color:var(--teal);">Jute/Natural again (445)</span><span class="tr-item" style="background:var(--amber-light);color:var(--amber);">Underlay — new room (329)</span><span class="tr-item" style="background:var(--green-light);color:var(--green);">Renuu – Zoe (82)</span></div></div>
+      <div class="tr-row"><div class="tr-from">Soft Washable first</div><div class="tr-items"><span class="tr-item" style="background:var(--teal-pale);color:var(--teal);">Soft Washable again (261)</span><span class="tr-item" style="background:var(--amber-light);color:var(--amber);">Underlay — new room (388)</span><span class="tr-item" style="background:var(--green-light);color:var(--green);">Renuu – Zoe (81)</span></div></div>
+      <div class="tr-row"><div class="tr-from">Flora/Washable first</div><div class="tr-items"><span class="tr-item" style="background:var(--teal-pale);color:var(--teal);">Flora again (111)</span><span class="tr-item" style="background:var(--amber-light);color:var(--amber);">Underlay — new room (193)</span><span class="tr-item" style="background:var(--green-light);color:var(--green);">Renuu – Faro (39)</span></div></div>
+      <div class="note"><strong>Key cross-sell pattern:</strong> Renuu ↔ Jute/Natural and Renuu ↔ Soft Washable are natural product pairs. Zoe buyers frequently trade up to Soft Washable Vintage as a second purchase (118 customers) — a premium cross-sell. Amber indicates new room purchases; these customers need different treatment to range-loyal returners.</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 2ND ORDER COMPOSITION -->
+<div class="section" id="second-order">
+  <div class="sec-hd"><div class="sec-n">06</div><div><div class="sec-title">Second Order — The Full Picture</div><div class="sec-sub">What customers actually buy when they come back — and what it means for how you speak to them</div></div></div>
+
+  <div class="g4" style="margin-bottom:24px;">
+    <div class="stat"><div class="stat-lbl">Total 2nd Orders</div><div class="stat-val">30,966</div><div class="stat-s">From 166,506 total customers</div></div>
+    <div class="stat"><div class="stat-lbl">Rug Only — No Underlay</div><div class="stat-val">78.8%</div><div class="stat-s">24,387 orders — brand loyal, same or new range</div></div>
+    <div class="stat amber"><div class="stat-lbl">Rug + Underlay — New Room</div><div class="stat-val amber">17.1%</div><div class="stat-s">5,296 orders — furnishing another room</div></div>
+    <div class="stat"><div class="stat-lbl">Underlay Only — No Rug</div><div class="stat-val">4.1%</div><div class="stat-s">1,283 orders — completing a previous purchase</div></div>
+  </div>
+
+  <div class="g2" style="margin-bottom:20px;">
+    <div class="panel">
+      <div class="ph ph-slate">2nd Order Composition Breakdown</div>
+      <div class="pb">
+        <div style="margin-bottom:20px;">
+          <!-- Visual donut alternative - stacked bar -->
+          <div style="display:flex;height:32px;border-radius:6px;overflow:hidden;margin-bottom:12px;">
+            <div style="width:78.8%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;">78.8% Rug only</div>
+            <div style="width:17.1%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;">17.1%</div>
+            <div style="width:4.1%;background:var(--muted);"></div>
+          </div>
+          <div style="display:flex;gap:16px;font-size:11px;flex-wrap:wrap;">
+            <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;background:var(--teal);border-radius:2px;flex-shrink:0;display:inline-block;"></span>Rug only (78.8%)</span>
+            <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;background:var(--amber);border-radius:2px;flex-shrink:0;display:inline-block;"></span>Rug + underlay (17.1%)</span>
+            <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;background:var(--muted);border-radius:2px;flex-shrink:0;display:inline-block;"></span>Underlay only (4.1%)</span>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <p style="font-size:13px;color:var(--muted);line-height:1.65;margin-top:16px;margin-bottom:14px;">Within the 78.8% who buy a rug on their second order, a subset are buying the same product in a different size — likely trialling a different configuration for the same or a new room.</p>
+        <div style="background:var(--teal-pale);border-radius:8px;padding:16px;display:flex;align-items:center;gap:20px;">
+          <div style="text-align:center;">
+            <div style="font-family:'DM Serif Text',serif;font-size:32px;color:var(--teal);">11.2%</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;">of all 2nd orders</div>
+          </div>
+          <div style="font-size:13px;color:var(--text);line-height:1.6;">
+            <strong>3,461 customers bought the same product in a different size</strong> on their second order. The most common: Zoe (206 customers), Faro (87), Grace (51), Moonshine (51). These customers may be resizing for a room, or trialling a different scale of the same look. They need different messaging — not a cross-sell, but reassurance about size choice.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ph ph-amber">Which 2nd Order Type Is Most Likely to Buy Again?</div>
+      <div class="pb">
+        <p style="font-size:13px;color:var(--muted);line-height:1.65;margin-bottom:16px;">The type of second order predicts how likely a customer is to make a third purchase. This should inform how you prioritise retention activity after the second order lands.</p>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>2nd Order Type</th><th>Customers</th><th>→ 3rd Purchase</th><th>Read</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><strong>Rug only</strong></td>
+                <td>24,387</td>
+                <td><span class="pill p-green">28.2%</span></td>
+                <td>Highest. Brand-loyal buyers who return for the range — natural loyalty trajectory</td>
+              </tr>
+              <tr>
+                <td><strong>Rug + underlay</strong><br><span style="font-size:11px;color:var(--muted);">New room buyer</span></td>
+                <td>5,296</td>
+                <td><span class="pill p-amber">24.2%</span></td>
+                <td>Good. Furnishing a second room — they may have a third room too. Cross-sell the next room.</td>
+              </tr>
+              <tr>
+                <td><strong>Underlay only</strong><br><span style="font-size:11px;color:var(--muted);">Completing previous order</span></td>
+                <td>1,283</td>
+                <td><span class="pill p-red">15.5%</span></td>
+                <td>Lowest. They came back to complete a past purchase — not a strong indicator of ongoing loyalty</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note"><strong>The implication:</strong> The rug-only 2nd buyer (78.8% of second orders) is your strongest retention prospect. They don't need a "new room" prompt — they're already brand-loyal. They respond best to new arrivals in ranges they've bought, or adjacent product discovery. The new-room buyer (rug + underlay) needs room-by-room cross-sell. Treat them differently.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph ph-teal">What This Means For Post-Purchase Messaging</div>
+    <div class="pb">
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>2nd Order Type</th><th>Signal</th><th>Retention Angle</th><th>What Not To Do</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Rug only — different product</strong><br><span style="font-size:11px;color:var(--muted);">78.8% of 2nd orders</span></td>
+              <td>Brand loyal, exploring the range</td>
+              <td>New arrivals in ranges they've bought. Adjacent range discovery using the purchase transition data — show Zoe buyers Soft Washable Vintage, Jute buyers Renuu.</td>
+              <td>Don't push "complete another room" — they may just love the brand, not be furnishing multiple spaces</td>
+            </tr>
+            <tr>
+              <td><strong>Rug + underlay</strong><br><span style="font-size:11px;color:var(--muted);">17.1% of 2nd orders</span></td>
+              <td>Furnishing a new room</td>
+              <td>Room-by-room prompt: "You've done the living room and bedroom — what about the hallway?" Use editorial by room to inspire the next space.</td>
+              <td>Don't send generic new arrivals — they're in buying mode for a specific need, not browsing</td>
+            </tr>
+            <tr>
+              <td><strong>Same product, different size</strong><br><span style="font-size:11px;color:var(--muted);">11.2% of 2nd orders</span></td>
+              <td>Resizing or same look in different room</td>
+              <td>Reassurance content — size guides, room styling, how the range looks in different spaces. Confirm they made the right size choice. Introduce the runner or complementary sizes.</td>
+              <td>Don't assume they want a different product — they've chosen their range, help them get the most from it</td>
+            </tr>
+            <tr>
+              <td><strong>Underlay only</strong><br><span style="font-size:11px;color:var(--muted);">4.1% of 2nd orders</span></td>
+              <td>Completing a previous purchase</td>
+              <td>Treat similarly to first-time buyer — they haven't really committed to the brand yet beyond the rug they already have. Introduce them to new ranges.</td>
+              <td>Don't over-invest — lowest 3rd-purchase rate (15.5%). They're completing, not returning.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOYALTY FLYWHEEL -->
+<div class="section" id="flywheel">
+  <div class="sec-hd"><div class="sec-n">07</div><div><div class="sec-title">The Loyalty Flywheel</div><div class="sec-sub">Each purchase makes the next one more likely — the data confirms it consistently</div></div></div>
+
+  <div class="g2" style="margin-bottom:20px;">
+    <div class="panel">
+      <div class="ph ph-slate">Purchase Transition Rates — Cleaned Data</div>
+      <div class="pb">
+        <p style="font-size:13px;color:var(--muted);line-height:1.65;margin-bottom:20px;">Once a customer has made their first purchase the likelihood of each subsequent purchase increases consistently. The hardest step is always the first repeat.</p>
+        <div class="bar-row">
+          <div class="bar-lbl w100" style="font-weight:600;color:var(--slate);">1st → 2nd</div>
+          <div class="bar-track"><div class="bar-fill" style="width:18.6%;background:var(--teal-light);"></div></div>
+          <div class="bar-pct">18.6%</div>
+          <div class="bar-meta">135,540 at this step</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-lbl w100" style="font-weight:600;color:var(--slate);">2nd → 3rd</div>
+          <div class="bar-track"><div class="bar-fill" style="width:27.0%;background:var(--teal);"></div></div>
+          <div class="bar-pct">27.0%</div>
+          <div class="bar-meta">30,966 at this step</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-lbl w100" style="font-weight:600;color:var(--slate);">3rd → 4th</div>
+          <div class="bar-track"><div class="bar-fill" style="width:33.9%;background:var(--slate);"></div></div>
+          <div class="bar-pct">33.9%</div>
+          <div class="bar-meta">8,354 at this step</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-lbl w100" style="font-weight:600;color:var(--slate);">4th → 5th</div>
+          <div class="bar-track"><div class="bar-fill" style="width:38.7%;background:var(--amber);"></div></div>
+          <div class="bar-pct">38.7%</div>
+          <div class="bar-meta">2,828 at this step</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-lbl w100" style="font-weight:600;color:var(--slate);">5th → 6th</div>
+          <div class="bar-track"><div class="bar-fill" style="width:42.0%;background:var(--amber);"></div></div>
+          <div class="bar-pct">42.0%</div>
+          <div class="bar-meta">1,094 at this step</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-lbl w100" style="font-weight:600;color:var(--slate);">6th → 7th</div>
+          <div class="bar-track"><div class="bar-fill" style="width:52.6%;background:var(--green);"></div></div>
+          <div class="bar-pct">52.6%</div>
+          <div class="bar-meta">More likely than not</div>
+        </div>
+        <div class="note green" style="margin-top:16px;">By the 6th purchase a customer is more likely to buy again than not. The flywheel effect is real and consistent — every purchase compounds the next.</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="ins red" style="margin-bottom:12px;">
+        <div class="ins-ico">🎯</div>
+        <div>
+          <div class="ins-title">The 1→2 step is the only one that needs heavy investment</div>
+          <div class="ins-body">At 18.6%, the first repeat is the hardest. Every subsequent step is progressively easier — 2→3 is 27%, 3→4 is 34%. The implication is clear: concentrate retention energy and budget disproportionately on converting 1× buyers. Once someone buys twice, the natural loyalty trajectory largely takes over.</div>
+        </div>
+      </div>
+      <div class="ins teal" style="margin-bottom:12px;">
+        <div class="ins-ico">🇮🇪</div>
+        <div>
+          <div class="ins-title">Ireland's advantage is greatest at the 1→2 step</div>
+          <div class="ins-body">Ireland converts 23.4% of first-time buyers to a second purchase vs 13.9% for UK — a 68% higher rate. But by the 3→4 step the gap narrows significantly (35.9% vs 29.1%). Ireland's advantage is in acquiring higher-quality customers who are more likely to make that critical first repeat. Once in the loyalty loop, both markets behave more similarly.</div>
+        </div>
+      </div>
+      <div class="ins amber">
+        <div class="ins-ico">💡</div>
+        <div>
+          <div class="ins-title">Your VIP customers need minimal intervention</div>
+          <div class="ins-body">The 8,354 customers who've bought 3+ times have a 34–52% chance of buying again with very little prompting — they just need to be kept warm with new arrivals and stock updates. Don't invest heavy win-back resource here. Save the incentive budget for the 135,540 people at step 1→2.</div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:12px;">
+        <div class="ph ph-teal">UK vs Ireland — Transition Rates</div>
+        <div class="pb">
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>Transition</th><th>UK</th><th>Ireland</th><th>IE advantage</th></tr></thead>
+              <tbody>
+                <tr><td>1→2</td><td>13.9%</td><td><strong>23.4%</strong></td><td><span class="pill p-green">+68%</span></td></tr>
+                <tr><td>2→3</td><td>22.3%</td><td><strong>29.8%</strong></td><td><span class="pill p-green">+34%</span></td></tr>
+                <tr><td>3→4</td><td>29.1%</td><td><strong>35.9%</strong></td><td><span class="pill p-amber">+23%</span></td></tr>
+                <tr><td>4→5</td><td>38.1%</td><td><strong>39.5%</strong></td><td><span class="pill p-teal">+4%</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="note" style="margin-top:12px;">The gap closes with every purchase. By the 4→5 step both markets are almost identical. Ireland's edge is in the early loyalty phase — the first and second repeat. This is exactly where retention activity has the most leverage.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 08 SEGMENTS -->
+<div class="section" id="segments">
+  <div class="sec-hd"><div class="sec-n">08</div><div><div class="sec-title">Customer Segments</div><div class="sec-sub">Who to target for retention, how many, and what angle to take</div></div></div>
+
+  <div class="panel" style="margin-bottom:20px;">
+    <div class="ph ph-slate">Priority Retention Segments</div>
+    <div class="pb">
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Segment</th><th>Est. Size</th><th>Retention Angle</th><th>Priority</th></tr></thead>
+        <tbody>
+          <tr><td><strong>VIP — 3×+ buyers</strong></td><td>9,292</td><td>These customers generate avg LTV of £361–681 and have no dedicated programme. Early access to new ranges, loyalty recognition, and exclusive content. Treat them differently to the broader customer base.</td><td><span class="pill p-red">Urgent</span></td></tr>
+          <tr><td><strong>Recent 1× buyers (&lt;90 days)</strong></td><td>~50k est.</td><td>Active purchase window open right now. Cross-sell based on first-purchase range using transition data above. Day 7 is same-room cross-sell; day 30 is new arrivals in their range; day 60 is the complementary range recommendation.</td><td><span class="pill p-red">Urgent</span></td></tr>
+          <tr><td><strong>Active 2× buyers</strong></td><td>24,619</td><td>Nurture toward 3×. Customers who've bought twice already trust the brand — they need room-by-room prompts and seasonal new arrivals from ranges adjacent to their previous purchases.</td><td><span class="pill p-amber">High</span></td></tr>
+          <tr><td><strong>Lapsed 1× buyers (180d+)</strong></td><td>~80k est.</td><td>Win-back segmented by recency — 180–365 days vs 365d+. Older lapsed customers need a stronger reason to revisit. New season editorial, fresh range arrivals, or a reason-to-browse moment rather than a direct promotion.</td><td><span class="pill p-amber">High</span></td></tr>
+          <tr><td><strong>Multi-room buyers</strong></td><td>~10k est.</td><td>Identified via underlay on second or subsequent order. Highest cross-sell potential in the business — they're actively furnishing multiple rooms. Room-by-room content and new arrivals are most relevant for this group.</td><td><span class="pill p-teal">Build</span></td></tr>
+          <tr><td><strong>Range-loyal buyers</strong></td><td>~2k per range</td><td>Segmented by first-purchase range. Jute (445 re-buyers), Zoe (393), Faro (236), Soft Washable (261) are the strongest groups. New stock and range updates are the most natural trigger for these customers.</td><td><span class="pill p-teal">Build</span></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div>
+      <div class="ins red" style="margin-bottom:10px;">
+        <div class="ins-ico">🏆</div>
+        <div><div class="ins-title">VIP segment needs a dedicated programme immediately</div><div class="ins-body">8,354 customers have purchased 3 or more times and generate avg LTV of £359–674. They currently receive the same treatment as everyone else. This is your most commercially valuable segment and it has no programme built around it.</div></div>
+      </div>
+      <div class="ins amber" style="margin-bottom:10px;">
+        <div class="ins-ico">🏠</div>
+        <div><div class="ins-title">Identify multi-room buyers and prioritise for cross-sell</div><div class="ins-body">Any customer with underlay on their second order should be flagged as a multi-room buyer. They've already shown they're furnishing multiple spaces — content helping them complete each room is the most relevant thing you can show them.</div></div>
+      </div>
+      <div class="ins teal">
+        <div class="ins-ico">📦</div>
+        <div><div class="ins-title">Use purchase transitions to remove guesswork from cross-sell</div><div class="ins-body">The transition data tells you exactly what to show. Zoe buyers respond to Soft Washable Vintage. Jute buyers respond to Renuu Zoe. This is more effective than generic new arrivals content and requires no additional research — the data is already here.</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="callout" style="margin:0;height:100%;">
+        <h4>The most time-sensitive action</h4>
+        <p>Your Q4 2025 BFCM cohort — 38,806 customers, your largest ever — is at peak repeat purchase probability right now. April and May 2026 are the highest-probability months for a second purchase from this cohort. Any retention activity landing on them in the next 4–6 weeks operates at maximum effectiveness. After day 90, you're in win-back territory, which is structurally harder and more expensive to convert.</p>
+        <div style="margin-top:18px;padding:14px;background:rgba(255,255,255,0.07);border-radius:8px;">
+          <div class="stat-lbl" style="color:rgba(255,255,255,0.4);">BFCM cohort repeat potential</div>
+          <div style="font-family:'DM Serif Text',serif;font-size:26px;color:white;margin-top:4px;">38,806 customers</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px;">If 25% repeat → ~9,262 orders → ~£1.08M at £117 AOV</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+<footer>Kukoon Rugs &nbsp;·&nbsp; Retention Strategy &nbsp;·&nbsp; Part 1 of 3 &nbsp;·&nbsp; Data: Oct 2023 – Mar 2026 (cleaned — POS, draft &amp; zero-value orders excluded) &nbsp;·&nbsp; Built April 2026</footer>
+
+<script>
+function goTo(id){document.getElementById(id)?.scrollIntoView({behavior:'smooth'});document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));event.target.classList.add('active');}
+const sections=['opportunity','ladder','window','cohorts','products','second-order','flywheel','segments'];
+window.addEventListener('scroll',()=>{let cur='';sections.forEach(id=>{const el=document.getElementById(id);if(el&&window.scrollY>=el.offsetTop-80)cur=id;});document.querySelectorAll('.nav-item:not(:first-child)').forEach((el,i)=>{el.classList.toggle('active',sections[i]===cur);});});
+</script>
+</body>
+</html>
